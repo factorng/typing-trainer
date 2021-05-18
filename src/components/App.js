@@ -1,9 +1,11 @@
 import React from "react";
-import getText from "../utils/api";
+import textApi from "../utils/api";
 import currentTime from "../utils/currentTime";
 import useKeyPress from "../hooks/useKeyPress";
+import useInterval from "../hooks/useInterval";
 import Preloader from "./Preloader";
 import "./App.css";
+import Popup from "./Popup";
 
 function App() {
   const [text, setText] = React.useState("");
@@ -13,6 +15,10 @@ function App() {
   const [startTime, setStartTime] = React.useState(null);
   const [charsCount, setCharsCount] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isCompleteLessonPopupOpen, setIsCompleteLessonPopupOpen] =
+    React.useState(false);
+  const [typingSpeed, setTypingSpeed] = React.useState(0);
+  const [isLessonDone, setIsLessonDone] = React.useState(false);
 
   useKeyPress((key) => {
     if (!startTime) {
@@ -20,10 +26,11 @@ function App() {
     }
 
     if (currentChar === text.length - 1) {
-      alert("succes");
+      setIsLessonDone(true);
+      setIsCompleteLessonPopupOpen(true);
       return;
     }
-    if (key == text.charAt(currentChar)) {
+    if (key === text.charAt(currentChar)) {
       setMistakeChar(false);
       setCurrentChar(currentChar + 1);
       setCharsCount(charsCount + 1);
@@ -37,16 +44,25 @@ function App() {
     }
   });
 
-  React.useEffect(() => {
+  const getText = React.useCallback(() => {
+    resetProgress();
     setIsLoading(true);
-    getText()
+    textApi()
       .then((res) => {
         setText(res);
         setCurrentChar(0);
         setIsLoading(false);
       })
-      .catch((err) => console.log(err)); // work with errors
+      .catch((err) => console.log(err));
   }, []);
+
+  React.useEffect(() => {
+    getText();
+  }, [getText]);
+
+  useInterval(() => {
+    !isLessonDone && setTypingSpeed(getTypingSpeed());
+  }, 1000);
 
   const getTypingSpeed = () => {
     if (charsCount < 2) return 0;
@@ -54,78 +70,79 @@ function App() {
   };
 
   const getTypingAccuracy = () => {
-    if (!mistakeCharsCount) return 100;
-    if (!charsCount) return 0;
-    else return (100 - (mistakeCharsCount / charsCount) * 100).toFixed(0);
+    // condition is to prevent NaN while loading
+    return isLoading
+      ? "100.00"
+      : (100 - (mistakeCharsCount / text.length) * 100).toFixed(2);
   };
 
   const resetProgress = () => {
-    setCurrentChar(null);
+    setCurrentChar(0);
     setMistakeChar(false);
     setMistakesCharsCount(0);
     setStartTime(null);
     setCharsCount(0);
   };
 
-  const getAnotherText = () => {
-    resetProgress();
-    setIsLoading(true);
-    getText()
-      .then((res) => {
-        setText(res);
-        setCurrentChar(0);
-        setIsLoading(false);
-      })
-      .catch((err) => console.log(err)); // work with errors
-  };
+  const closeCompleteLessonPopup = () => setIsCompleteLessonPopupOpen(false);
 
   return (
-    <div className="wrapper">
-      <section className="text">
-        {isLoading ? (
-          <Preloader />
-        ) : (
-          <>
-            <span style={{ color: "green" }}>
-              {text.substring(0, currentChar)}
-            </span>
-            {mistakeChar ? (
-              <span className="text__cursor_mistake">
-                {text.charAt(currentChar)}
+    <>
+      {isCompleteLessonPopupOpen ? (
+        <Popup
+          accuracy={getTypingAccuracy()}
+          speed={typingSpeed}
+          handleStartOver={getText}
+          handleClose={closeCompleteLessonPopup}
+        />
+      ) : (
+        ""
+      )}
+      <div className="wrapper">
+        <section className="text">
+          {isLoading ? (
+            <Preloader />
+          ) : (
+            <>
+              <span style={{ color: "green" }}>
+                {text.substring(0, currentChar)}
               </span>
-            ) : (
-              <span className="text__cursor">{text.charAt(currentChar)}</span>
-            )}
-            <spam>{text.substring(currentChar + 1, text.length)}</spam>
-          </>
-        )}
-      </section>
-      <section className="info-and-controlls">
-        <div className="statistic">
-          <p className="statistic-item">
-            Chars per minute{" "}
-            <span className="statistic-item__higlighted">
-              {getTypingSpeed()}
-            </span>
-          </p>
-          <p className="statistic-item">
-            Accuracy{" "}
-            <span className="statistic-item__higlighted">
-              {getTypingAccuracy()}%
-            </span>
-          </p>
-        </div>
-        <div className="controlls">
-          <button onMouseDown={resetProgress} className="controlls__button">
-            start over
-          </button>
-          <button onMouseDown={getAnotherText} className="controlls__button">
-            get another text
-          </button>
-        </div>
-      </section>
-    </div>
+              {mistakeChar ? (
+                <span className="text__cursor_mistake">
+                  {text.charAt(currentChar)}
+                </span>
+              ) : (
+                <span className="text__cursor">{text.charAt(currentChar)}</span>
+              )}
+              <span>{text.substring(currentChar + 1, text.length)}</span>
+            </>
+          )}
+        </section>
+        <section className="info-and-controlls">
+          <div className="statistic">
+            <p className="statistic-item">
+              Chars per minute
+              <span className="statistic-item__higlighted"> {typingSpeed}</span>
+            </p>
+            <p className="statistic-item">
+              Accuracy
+              <span className="statistic-item__higlighted">
+                {" "}
+                {getTypingAccuracy()}%
+              </span>
+            </p>
+          </div>
+          <div className="controlls">
+            <button onMouseDown={resetProgress} className="controlls__button">
+              start over
+            </button>
+            <button onMouseDown={getText} className="controlls__button">
+              get another text
+            </button>
+          </div>
+        </section>
+      </div>
+    </>
   );
 }
-// 9/10*100 =
 export default App;
