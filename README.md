@@ -1,6 +1,6 @@
 # Клавиатурный тренажер
 
-Ссылка на работающий проект на ghpages [Create React App](https://factorng.github.io/typing-trainer/).
+Ссылка на работающий проект на ghpages [Typing trainer](https://factorng.github.io/typing-trainer/).
 
 ## Реализовано:
 
