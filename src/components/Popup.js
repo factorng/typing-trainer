@@ -6,6 +6,7 @@ export default function Popup({
   speed,
   handleStartOver,
   handleClose,
+  isOpen
 }) {
   React.useEffect(() => {
     const escClose = (e) => e.key === "Escape" && handleClose();
@@ -14,7 +15,7 @@ export default function Popup({
   }, [handleClose]);
 
   return (
-    <div className="popup-overlay">
+    <div className={isOpen ? "popup-overlay" : 'popup-overlay popup-overlay_closed'}>
       <div className="popup">
         <h1 className="popup__header">Congratulatios!</h1>
         <h2 className="popup__header">Lesson completed</h2>

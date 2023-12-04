@@ -8,6 +8,9 @@
   align-items: center;
   z-index: 2;
 }
+.popup-overlay_closed {
+  display: none;
+}
 .popup {
   background-color: white;
   width: 30vw;

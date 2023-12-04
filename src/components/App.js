@@ -1,11 +1,12 @@
 import React from "react";
-import textApi from "../utils/api";
+import { getTextFromAPI } from "../utils/api";
 import currentTime from "../utils/currentTime";
 import useKeyPress from "../hooks/useKeyPress";
 import useInterval from "../hooks/useInterval";
-import Preloader from "./Preloader";
 import "./App.css";
 import Popup from "./Popup";
+import Info from "./Info";
+import Text from "./Text";
 
 function App() {
   const [text, setText] = React.useState("");
@@ -47,9 +48,9 @@ function App() {
   const getText = React.useCallback(() => {
     resetProgress();
     setIsLoading(true);
-    textApi()
+    getTextFromAPI()
       .then((res) => {
-        setText(res);
+        setText(res.slice(0, 10)); //reduce text size for testing
         setCurrentChar(0);
         setIsLoading(false);
       })
@@ -70,7 +71,7 @@ function App() {
   };
 
   const getTypingAccuracy = () => {
-    // condition is to prevent NaN while loading
+    // condition to prevent NaN while loading
     return isLoading
       ? "100.00"
       : (100 - (mistakeCharsCount / text.length) * 100).toFixed(2);
@@ -88,59 +89,28 @@ function App() {
 
   return (
     <>
-      {isCompleteLessonPopupOpen ? (
-        <Popup
-          accuracy={getTypingAccuracy()}
-          speed={typingSpeed}
-          handleStartOver={getText}
-          handleClose={closeCompleteLessonPopup}
-        />
-      ) : (
-        ""
-      )}
+      <Popup
+        accuracy={getTypingAccuracy()}
+        speed={typingSpeed}
+        handleStartOver={getText}
+        handleClose={closeCompleteLessonPopup}
+        isOpen={isCompleteLessonPopupOpen}
+      />
+
       <div className="wrapper">
-        <section className="text">
-          {isLoading ? (
-            <Preloader />
-          ) : (
-            <>
-              <span style={{ color: "green" }}>
-                {text.substring(0, currentChar)}
-              </span>
-              {mistakeChar ? (
-                <span className="text__cursor_mistake">
-                  {text.charAt(currentChar)}
-                </span>
-              ) : (
-                <span className="text__cursor">{text.charAt(currentChar)}</span>
-              )}
-              <span>{text.substring(currentChar + 1, text.length)}</span>
-            </>
-          )}
-        </section>
-        <section className="info-and-controlls">
-          <div className="statistic">
-            <p className="statistic-item">
-              Chars per minute
-              <span className="statistic-item__higlighted"> {typingSpeed}</span>
-            </p>
-            <p className="statistic-item">
-              Accuracy
-              <span className="statistic-item__higlighted">
-                {" "}
-                {getTypingAccuracy()}%
-              </span>
-            </p>
-          </div>
-          <div className="controlls">
-            <button onMouseDown={resetProgress} className="controlls__button">
-              start over
-            </button>
-            <button onMouseDown={getText} className="controlls__button">
-              get another text
-            </button>
-          </div>
-        </section>
+        
+          <Text
+            text={text}
+            mistakeChar={mistakeChar}
+            currentChar={currentChar}
+            isLoading={isLoading}
+          />
+        <Info
+          typingSpeed={typingSpeed}
+          getTypingAccuracy={getTypingAccuracy}
+          resetProgress={resetProgress}
+          textUpdate={getText}
+        />
       </div>
     </>
   );
